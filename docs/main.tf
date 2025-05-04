@@ -1,19 +1,25 @@
 provider "docker" {}
 
-# Red para Jenkins y Dind
-resource "docker_network" "jenkins_net" {
+resource "docker_network" "jenkins" {
   name = "jenkins"
 }
 
-# Docker in Docker (dind)
-resource "docker_container" "dind" {
-  name       = "jenkins-docker"
-  image      = "docker:dind"
+resource "docker_volume" "jenkins_data" {
+  name = "jenkins-data"
+}
+
+resource "docker_volume" "jenkins_docker_certs" {
+  name = "jenkins-docker-certs"
+}
+
+resource "docker_container" "jenkins_dind" {
+  name  = "jenkins-docker"
+  image = "docker:dind"
   privileged = true
-  restart    = "on-failure"
+  restart    = "no"
 
   networks_advanced {
-    name    = docker_network.jenkins_net.name
+    name    = docker_network.jenkins.name
     aliases = ["docker"]
   }
 
@@ -22,24 +28,30 @@ resource "docker_container" "dind" {
   ]
 
   volumes {
-    host_path      = abspath("${path.cwd}/jenkins-docker-certs")
+    volume_name    = docker_volume.jenkins_docker_certs.name
     container_path = "/certs/client"
   }
-  
+
+  volumes {
+    volume_name    = docker_volume.jenkins_data.name
+    container_path = "/var/jenkins_home"
+  }
+
   ports {
     internal = 2376
     external = 2376
   }
+
+  command = ["--storage-driver", "overlay2"]
 }
 
-# Jenkins usando imagen existente
-resource "docker_container" "jenkins" {
-  name    = "jenkins-blueocean"
-  image   = "jenkinsci/blueocean:latest"
+resource "docker_container" "jenkins_blueocean" {
+  name  = "jenkins-blueocean"
+  image = "myjenkins-blueocean"
   restart = "on-failure"
 
   networks_advanced {
-    name = docker_network.jenkins_net.name
+    name = docker_network.jenkins.name
   }
 
   env = [
@@ -59,24 +71,15 @@ resource "docker_container" "jenkins" {
   }
 
   volumes {
-    host_path      = abspath("${path.cwd}/jenkins-home")
+    volume_name    = docker_volume.jenkins_data.name
     container_path = "/var/jenkins_home"
   }
 
   volumes {
-    host_path      = abspath("${path.cwd}/jenkins-docker-certs")
+    volume_name    = docker_volume.jenkins_docker_certs.name
     container_path = "/certs/client"
     read_only      = true
   }
 
-  # Volumen para acceder a los archivos del proyecto
-  volumes {
-    host_path      = abspath(path.cwd)
-    container_path = "/var/jenkins_home/workspace/proyecto"
-    read_only      = true
-  }
-
-  depends_on = [
-    docker_container.dind
-  ]
+  depends_on = [docker_container.jenkins_dind]
 }

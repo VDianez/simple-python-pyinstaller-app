@@ -1,41 +1,33 @@
-Pipeline script from SCM
-SCM: Git
-Repository URL: https://github.com/VDianez/simple-python-pyinstaller-app
-Credentials: <None>
-Script Path: Jenkinsfile
-Branches to build: */main
 pipeline {
-    agent {
-        docker {
-            image 'python:3.13-alpine'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
-    environment {
-        APP_NAME = 'simple-python-pyinstaller-app'
+    agent any
+    options {
+        skipStagesAfterUnstable()
     }
     stages {
-        stage('Install dependencies') {
+        stage('Build') {
             steps {
-                sh 'pip install --upgrade pip'
-                sh 'pip install -r requirements.txt'
+                sh 'python -m py_compile sources/add2vals.py sources/calc.py'
+                stash(name: 'compiled-results', includes: 'sources/.py')
             }
         }
-        stage('Build executable') {
+        stage('Test') {
             steps {
-                sh 'pyinstaller --onefile main.py'
+                sh 'py.test --junit-xml test-reports/results.xml sources/test_calc.py'
+            }
+            post {
+                always {
+                    junit 'test-reports/results.xml'
+                }
             }
         }
-        stage('Run tests') {
+        stage('Deliver') { 
             steps {
-                sh 'pytest tests'
+                sh "pyinstaller --onefile sources/add2vals.py" 
             }
-        }
-        stage('Deliver') {
-            steps {
-                sh './jenkins/scripts/deliver.sh'
-                input message: '¿Terminaste de usar la aplicación? Haz clic en "Proceed" para continuar.'
-                sh './jenkins/scripts/kill.sh'
+            post {
+                success {
+                    archiveArtifacts 'dist/add2vals' 
+                }
             }
         }
     }
