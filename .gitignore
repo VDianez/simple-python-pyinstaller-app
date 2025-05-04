@@ -99,15 +99,16 @@ ENV/
 # mypy
 .mypy_cache/
 
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-crash.log
-*.tfvars
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-.terraform.lock.hcl
-terraform.tfvars.json
+# Terraform (en carpeta docs/)
+docs/.terraform/
+docs/*.tfstate
+docs/*.tfstate.*
+docs/crash.log
+docs/*.tfvars
+docs/override.tf
+docs/override.tf.json
+docs/*_override.tf
+docs/*_override.tf.json
+docs/.terraform.lock.hcl
+docs/terraform.tfvars.json
+
