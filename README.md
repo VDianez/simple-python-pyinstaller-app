@@ -17,11 +17,19 @@ docker build -t myjenkins-blueocean .
 
 ## 2. Desplegar contenedores con Terraform
 
-Ejecuta el script para lanzar Jenkins y su infraestructura asociada:
+Este paso lanza la infraestructura necesaria utilizando Terraform. El siguiente script automatiza los comandos de inicialización, validación y despliegue del entorno definido:
 
 ```bash
 python ./deploy_jenkins.py
 ```
+
+Este script realiza lo siguiente:
+
+1. Inicializa el directorio de trabajo de Terraform (terraform init).
+
+2. Valida que los archivos de configuración sean correctos (terraform validate).
+
+3. Aplica automáticamente la infraestructura sin requerir confirmación manual (terraform apply -auto-approve).
 
 ---
 
